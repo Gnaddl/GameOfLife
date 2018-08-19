@@ -11,10 +11,11 @@
  *
  *  Thanks to the people working on the excellent u8glib (Universal Graphics
  *  Library for 8 bit Embedded Systems).
- *  See http://code.google.com/p/u8glib/
+ *  See https://github.com/olikraus/u8glib
  *
- *  Author:     Gnaddl
- *  Date:       03-AUG-2013
+ *  Author:      Gnaddl
+ *  Date:        03-AUG-2013
+ *  Last change: 19-AUG-2018
  */
 
 #include "Arduino.h"
@@ -256,9 +257,9 @@ void setup(void)
   } while (glcd.nextPage());
   delay (2000);
 
-//  init_population_pattern (glidergun);      // start with a Glider Gun pattern
+  init_population_pattern (glidergun);      // start with a Glider Gun pattern
 //  init_population_pattern (gun2);
-  init_population_pattern (gun3);
+//  init_population_pattern (gun3);
 }
 
 

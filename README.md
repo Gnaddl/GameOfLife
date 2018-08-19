@@ -9,4 +9,4 @@ Memory management can be quite tricky if you have to deal with the restricted RA
 To cope with the restrictions of the RAM size we use a simple trick. The calculation is done "in place" by using additional 3 lines for the bitmap. The current population is shifted up by 3 lines, then the next generation is calculated line by line and overwrites the part of the previous generation, which is no longer needed. This trick reduces the needed RAM to 128 * (64 + 3) / 8 = 1072 bytes. Have a look at the source code for more information.
 
 ## Appreciation
-Special thanks to the people working on the excellent **u8glib** (Universal Graphics Library for 8 bit Embedded Systems). See http://code.google.com/p/u8glib/
+Special thanks to the people working on the excellent **u8glib** (Universal Graphics Library for 8 bit Embedded Systems). See https://github.com/olikraus/u8glib
