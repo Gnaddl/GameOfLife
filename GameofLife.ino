@@ -4,8 +4,8 @@
  *  http://en.wikipedia.org/wiki/Conway%27s_Game_of_Life
  *
  *  We use a simple trick to cope with the restricted RAM of the Arduino. The
- *  calculation is done "in place" by using additional 3 lines for the bitmap.
- *  The current population is shifted up by 3 lines, then the next generation
+ *  calculation is done "in place" by using additional 2 lines for the bitmap.
+ *  The current population is shifted up by 2 lines, then the next generation
  *  is calculated and overwrites the part of the previous generation, which is
  *  no longer needed.
  *
@@ -27,17 +27,11 @@
 #define DISPLAY_X  128        // Display resolution horizontally
 #define DISPLAY_Y  64         // Display resolution vertically
 
-#define MAX_X      128        // size of the cell area
+#define MAX_X      128        // size of the cell area; both values must be a power of 2
 #define MAX_Y      64
 
-#define SHIFT_BYTES    (2 * (MAX_X)/8)
-
-
-/**
- * Setup u8g object for the graphic display.
- * Use another constructor if you have a different display type connected to your Arduino.
- */
-U8GLIB_SSD1306_128X64 glcd (U8G_I2C_OPT_DEV_0|U8G_I2C_OPT_NO_ACK|U8G_I2C_OPT_FAST);  // Fast I2C / TWI
+#define Y_SHIFT        2      // Number of pixel lines to shift up before calculating the next cell generation
+#define SHIFT_BYTES    ((Y_SHIFT) * (MAX_X)/8)
 
 
 /**
@@ -45,7 +39,7 @@ U8GLIB_SSD1306_128X64 glcd (U8G_I2C_OPT_DEV_0|U8G_I2C_OPT_NO_ACK|U8G_I2C_OPT_FAS
  */
 
  // Glider Gun
-static const uint8_t glidergun [] =
+static const uint8_t glidergun[] =
 {
   5, 9, 8, 6,
   0b00000000, 0b00000000, 0b00000000, 0b01000000, 0b00000000,
@@ -60,7 +54,7 @@ static const uint8_t glidergun [] =
 };
 
 
-static const uint8_t gun2 [] =
+static const uint8_t gun2[] =
 {
   1, 5, 32, 32,
   0b01110100,
@@ -71,7 +65,7 @@ static const uint8_t gun2 [] =
 };
 
 
-static const uint8_t gun3 [] =
+static const uint8_t gun3[] =
 {
   5, 1, 32, 32,
   0b01111111, 0b10111110, 0b00111000, 0b00011111, 0b11011111
@@ -79,9 +73,14 @@ static const uint8_t gun3 [] =
 
 
 
-// Class data
-uint8_t population [MAX_X/8 * (MAX_Y + 3)];
-int generation = 0;
+/**
+ * Setup u8g object for the graphic display.
+ * Use another constructor if you have a different display type connected to your Arduino.
+ */
+U8GLIB_SSD1306_128X64 glcd (U8G_I2C_OPT_DEV_0|U8G_I2C_OPT_NO_ACK|U8G_I2C_OPT_FAST);  // Fast I2C / TWI
+
+static uint8_t population[MAX_X/8 * (MAX_Y + Y_SHIFT)];
+static int generation = 0;
 
 
 // "Torus" functions for coordinate wrap-around.
@@ -91,21 +90,21 @@ inline uint8_t tory (uint8_t y) { return (y + MAX_Y) & (MAX_Y - 1); }
 
 // Note: the following functions assume that the x and y coordinates are always
 //       in the allowed range. No further checks are done.
-inline void setCell (unsigned int x, unsigned int y)
+inline void setCell (uint8_t x, uint8_t y)
 {
   population[(x >> 3) + y * MAX_X/8] |= 0x80 >> (x & 0x07);
 }
 
 
-inline void clearCell (unsigned int x, unsigned int y)
+inline void clearCell (uint8_t x, uint8_t y)
 {
   population[(x >> 3) + y * MAX_X/8] &= ~(0x80 >> (x & 0x07));
 }
 
 
-inline bool isCellAlive (unsigned int x, unsigned int y)
+inline bool isCellAlive (uint8_t x, uint8_t y)
 {
-  return population [(x >> 3) + (y + 2) * MAX_X/8] & (0x80 >> (x & 0x07));
+  return population[(x >> 3) + (y + Y_SHIFT) * MAX_X/8] & (0x80 >> (x & 0x07));
 }
 
 
@@ -117,7 +116,7 @@ void init_population_random (unsigned int count)
   // clear the population
   memset (population, sizeof (population), 0);
 
-  // calculate new pattern
+  // create a new pattern
   for (; count > 0; count--)
   {
     int x, y;
@@ -131,7 +130,7 @@ void init_population_random (unsigned int count)
 
 
 /**
- *  Initialize the population by a predefined pattern.
+ *  Initialize the population by a predefined bitmap.
  */
 void init_population_pattern (const uint8_t *p)
 {
@@ -147,10 +146,12 @@ void init_population_pattern (const uint8_t *p)
   xoffset = *p++;
   yoffset = *p++;
 
+  // set the cells from the bitmap
   for (y = 0; y < ymax; y++)
     for (x = 0; x < xmax; x++, p++)
       for (uint8_t theBit = 0; theBit < 8; theBit++)
-        if (*p & (0x80 >> theBit)) setCell (x * 8 + theBit + xoffset, y + yoffset);
+        if (*p & (0x80 >> theBit))
+          setCell (x * 8 + theBit + xoffset, y + yoffset);
 }
 
 
@@ -220,13 +221,13 @@ void next_generation (void)
  */
 void draw (void)
 {
-  char buffer [8];
+  char buffer[8];
 
   // draw the population bitmap
   glcd.setColorIndex (1);
   glcd.drawBitmap (0, 0, MAX_X/8, MAX_Y, population);
 
-  // print the generation number in the top right corner
+  // show the generation number in the top right corner
   sprintf (buffer, "%3d", generation);
   glcd.setFont (u8g_font_5x8);
   glcd.drawStr (112, 8, buffer);
@@ -239,7 +240,7 @@ void setup(void)
   Serial.begin (115200);
 
   fdev_setup_stream (&uartout, uart_putchar, NULL, _FDEV_SETUP_WRITE);
-  stdout = &uartout ;
+  stdout = &uartout;
 #endif
 
   glcd.setRot180();
@@ -247,7 +248,6 @@ void setup(void)
   glcd.setFontPosTop();
   glcd.setColorIndex (1);
   glcd.setFont (u8g_font_unifont);
-  //glcd.setRot180();
 
   glcd.firstPage();  
   do
