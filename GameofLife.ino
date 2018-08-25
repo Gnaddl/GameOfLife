@@ -1,36 +1,36 @@
 /**
  *  This Arduino sketch demonstrates John Conway's Game of Life on a monochrome
- *  128x64 pixel graphic display. For a more detailed description see
+ *  128x64 pixel graphic display. For a more detailed description of the game see
  *  http://en.wikipedia.org/wiki/Conway%27s_Game_of_Life
  *
  *  We use a simple trick to cope with the restricted RAM of the Arduino. The
- *  calculation is done "in place" by using additional 2 lines for the bitmap.
- *  The current population is shifted up by 2 lines, then the next generation
+ *  calculation is done "in place" by using additional 3 lines for the bitmap.
+ *  The current population is shifted up by 3 lines, then the next generation
  *  is calculated and overwrites the part of the previous generation, which is
  *  no longer needed.
  *
- *  Thanks to the people working on the excellent u8glib (Universal Graphics
+ *  Thanks to the people working on the excellent u8g2 library (Universal Graphics
  *  Library for 8 bit Embedded Systems).
- *  See https://github.com/olikraus/u8glib
+ *  See https://github.com/olikraus/u8g2
  *
  *  Author:      Gnaddl
  *  Date:        03-AUG-2013
- *  Last change: 19-AUG-2018
+ *  Last change: 25-AUG-2018
  */
 
 #include "Arduino.h"
-#include "U8glib.h"
+#include "U8g2lib.h"
 
 // Remove the comment from the following #define if you want the coordinates to wrap around.
 //#define USE_TORUS
 
-#define DISPLAY_X  128        // Display resolution horizontally
-#define DISPLAY_Y  64         // Display resolution vertically
+#define DISPLAY_X      128    // Display resolution horizontally
+#define DISPLAY_Y      64     // Display resolution vertically
 
-#define MAX_X      128        // size of the cell area; both values must be a power of 2
-#define MAX_Y      64
+#define MAX_X          128    // size of the cell area; both values must be a power of 2
+#define MAX_Y          64
 
-#define Y_SHIFT        2      // Number of pixel lines to shift up before calculating the next cell generation
+#define Y_SHIFT        3      // Number of pixel lines to shift up before calculating the next cell generation
 #define SHIFT_BYTES    ((Y_SHIFT) * (MAX_X)/8)
 
 
@@ -74,10 +74,10 @@ static const uint8_t gun3[] =
 
 
 /**
- * Setup u8g object for the graphic display.
+ * Setup u8g2 object for the graphic display with 180 degree rotation.
  * Use another constructor if you have a different display type connected to your Arduino.
  */
-U8GLIB_SSD1306_128X64 glcd (U8G_I2C_OPT_DEV_0|U8G_I2C_OPT_NO_ACK|U8G_I2C_OPT_FAST);  // Fast I2C / TWI
+U8G2_SSD1306_128X64_NONAME_2_HW_I2C glcd (U8G2_R2);  // Fast I2C / TWI
 
 static uint8_t population[MAX_X/8 * (MAX_Y + Y_SHIFT)];
 static int generation = 0;
@@ -243,11 +243,8 @@ void setup(void)
   stdout = &uartout;
 #endif
 
-  glcd.setRot180();
-  glcd.setDefaultForegroundColor();
-  glcd.setFontPosTop();
-  glcd.setColorIndex (1);
-  glcd.setFont (u8g_font_unifont);
+  glcd.begin();
+  glcd.setFont (u8g2_font_helvB10_tf);
 
   glcd.firstPage();  
   do
@@ -265,7 +262,6 @@ void setup(void)
 
 void loop(void)
 {
-  // Picture loop
   glcd.firstPage();  
   do
   {

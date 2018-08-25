@@ -1,7 +1,5 @@
 # Conway's Game of Life
-
-## Basics
-This Arduino sketch demonstrates John Conway's Game of Life on a monochrome 128x64 pixel graphic display. For a more detailed description see http://en.wikipedia.org/wiki/Conway%27s_Game_of_Life
+This Arduino sketch demonstrates John Conway's Game of Life on a monochrome 128x64 pixel graphic display. For a more detailed description of the game see http://en.wikipedia.org/wiki/Conway%27s_Game_of_Life
 
 ## Memory Handling
 Memory management can be quite tricky if you have to deal with the restricted RAM size of an 8-bit microcontroller like the Atmel ATmega328P on an Arduino. The bitmap for a population of 128 by 64 cells requires 128 * 64 / 8 = 1024 bytes of RAM. Since the next cell generation is calculated from the previous generation, the program normally needs 2 kBytes, which is the whole RAM of the ATmega328P. Therefore, keeping both generations in RAM at the same time is not possible on an Arduino.
